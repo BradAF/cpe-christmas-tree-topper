@@ -37,6 +37,9 @@ def fadeOut(led):
     for i in range(100, -1, -1):
         if i == 0:
             cp.pixels[led] = (0,0,0)
+            # Workaround to reset all pixels on a switch change.
+            cp.pixels.fill((0,0,0))
+            cp.pixels.brightness = 1.0
         else:
             cp.pixels[led] = (int(r*i/100), int(g*i/100), int(b*i/100))
     pass
@@ -47,7 +50,7 @@ def fadeInAll(color):
         cp.pixels.fill(color)
 
 def fadeOutAll():
-    for i in range (100,-1, -1):
+    for i in range(100,-1, -1):
         cp.pixels.brightness = i/100
 
 def randomColor(color_dict):
@@ -60,9 +63,10 @@ def randomColor(color_dict):
 
 def randomLED():
     global lastLed
-    led = random.randrange(0, len(cp.pixels) - 1)
+    # Don't need to subtract 1 from total here because the last value in range isn't included by design.
+    led = random.randrange(0, len(cp.pixels))
     while led == lastLed:
-        led = random.randrange(0, len(cp.pixels) - 1)
+        led = random.randrange(0, len(cp.pixels))
     lastLed = led
     return led
 
@@ -83,6 +87,9 @@ while True:
     # Get a random color defined in the dict.
     currentColor = randomColor(color_dict)
     
+    # print(f"currentColor: {currentColor}")
+    # print(f"brightness: {cp.pixels.brightness}")
+
     # If the switch is to the left, do a random LED.
     if cp.switch:
         currentLED = randomLED()
