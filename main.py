@@ -1,3 +1,8 @@
+""""
+    Make sure to copy this code to the `code.py` file on the CircuitPlayground Express.
+    It should be `main.py` in the repository so the VS Code pylinter doesn't get grouchy because it overwrites the 'code' standard library.
+"""
+
 from adafruit_circuitplayground.express import cpx as cp
 import random
 
@@ -36,6 +41,15 @@ def fadeOut(led):
             cp.pixels[led] = (int(r*i/100), int(g*i/100), int(b*i/100))
     pass
 
+def fadeInAll(color):
+    for i in range(0,101,1):
+        cp.pixels.brightness = i/100
+        cp.pixels.fill(color)
+
+def fadeOutAll():
+    for i in range (100,-1, -1):
+        cp.pixels.brightness = i/100
+
 def randomColor(color_dict):
     global lastColor
     color = random.choice(list(color_dict.values()))
@@ -57,8 +71,8 @@ def initializeBoard():
     for i in range(len(cp.pixels)):
         fadeIn(i-1,(color_dict['white']))
         fadeOut(i-1)
+    cp.play_file("merrychristmascb.wav")
     cp.red_led = False
-    pass
 
 def playMusic(song):
     pass
@@ -66,7 +80,15 @@ def playMusic(song):
 initializeBoard()
 
 while True:
-    currentLED = randomLED()
+    # Get a random color defined in the dict.
     currentColor = randomColor(color_dict)
-    fadeIn(currentLED,currentColor)
-    fadeOut(currentLED)
+    
+    # If the switch is to the left, do a random LED.
+    if cp.switch:
+        currentLED = randomLED()
+        fadeIn(currentLED,currentColor)
+        fadeOut(currentLED)
+    # If the switch is to the right, do ALL LEDs.
+    else:
+        fadeInAll(currentColor)
+        fadeOutAll()
