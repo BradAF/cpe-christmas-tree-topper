@@ -5,6 +5,7 @@
 
 from adafruit_circuitplayground.express import cpx as cp
 import random
+import time
 
 color_dict = {
     "red": (255, 0, 0),
@@ -16,6 +17,7 @@ color_dict = {
 
 lastLed = -1
 lastColor = -1
+holdTimeSeconds = 2 # Length of time in seconds after fading in, and before fading out.
 
 def fadeIn(led,color):
     """ Fade in to a specific LED and color to maximum brightness. """
@@ -70,11 +72,36 @@ def randomLED():
     lastLed = led
     return led
 
+def chaseLED(color):
+    for i in range(len(cp.pixels)):
+        fadeIn(i-1,color)
+        fadeOut(i-1)
+
+def halfLED(colors: tuple):
+    """
+    Sets half the random LEDs to one color, the other half to another color.
+    """
+    numOfLEDs = len(cp.pixels)
+    numOfLEDsInGroup = numOfLEDs // 2
+    for i in range(0, numOfLEDsInGroup):
+        cp.pixels[i] = colors[0]
+    for i in range(numOfLEDsInGroup, numOfLEDs):
+        cp.pixels[i] = colors[1]
+    
+    # TODO: Test if the following list slicing works on hardware as an alternative to the for loops
+    # cp.pixels[0:halfNumOfLEDs] = [colors[0]] * halfNumOfLEDs
+    # cp.pixels[halfNumOfLEDs:] = [colors[1]] * (numOfLEDs - halfNumOfLEDs)
+
+def allLEDRandom(color_dict: dict):
+    """
+    Sets all the LEDS to a random color.
+    """
+    for i in range(len(cp.pixels)):
+        cp.pixels[i] == randomColor(color_dict)
+
+
 def initializeBoard():
     cp.red_led = True
-    for i in range(len(cp.pixels)):
-        fadeIn(i-1,(color_dict['white']))
-        fadeOut(i-1)
     cp.play_file("merrychristmascb.wav")
     cp.red_led = False
 
@@ -94,8 +121,10 @@ while True:
     if cp.switch:
         currentLED = randomLED()
         fadeIn(currentLED,currentColor)
+        time.sleep(holdTimeSeconds)
         fadeOut(currentLED)
     # If the switch is to the right, do ALL LEDs.
     else:
         fadeInAll(currentColor)
+        time.sleep(holdTimeSeconds)
         fadeOutAll()
