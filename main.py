@@ -1,8 +1,3 @@
-""""
-    Make sure to copy this code to the `code.py` file on the CircuitPlayground Express.
-    It should be `main.py` in the repository so the VS Code pylinter doesn't get grouchy because it overwrites the 'code' standard library.
-"""
-
 from adafruit_circuitplayground.express import cpx as cp
 import random
 import time
@@ -17,7 +12,25 @@ color_dict = {
 
 lastLed = -1
 lastColor = -1
+mode = 0
 holdTimeSeconds = 2 # Length of time in seconds after fading in, and before fading out.
+
+def load_mode_from_file(path):
+    # Can't check if file exists before opening with CircuitPython so we just have to hope it does.
+    with open(path, "rt") as file:
+        # Read the mode from file
+        # file_content = file.read() # Set it here, because I can only read it once and I want to see what it says.
+        #print(f"file.read(): {file_content}")
+        mode = int(file.read())
+    return mode
+
+def save_mode_to_file(path,mode):
+    # Save mode into a file
+    with open(path, "w") as file:
+        file.write(str(mode))
+ 
+    print("Current Mode: ", mode)
+    return mode
 
 def fadeIn(led,color):
     """ Fade in to a specific LED and color to maximum brightness. """
@@ -39,9 +52,6 @@ def fadeOut(led):
     for i in range(100, -1, -1):
         if i == 0:
             cp.pixels[led] = (0,0,0)
-            # Workaround to reset all pixels on a switch change.
-            cp.pixels.fill((0,0,0))
-            cp.pixels.brightness = 1.0
         else:
             cp.pixels[led] = (int(r*i/100), int(g*i/100), int(b*i/100))
     pass
@@ -72,10 +82,14 @@ def randomLED():
     lastLed = led
     return led
 
-def chaseLED(color):
-    for i in range(len(cp.pixels)):
-        fadeIn(i-1,color)
-        fadeOut(i-1)
+def chaseLEDFade(color):
+    for i in range(0,len(cp.pixels)):
+        fadeIn(i,color)
+        fadeOut(i)
+
+def chaseLEDHold(color):
+    for i in range(0,len(cp.pixels)):
+        fadeIn(i,color)
 
 def halfLED(colors: tuple):
     """
@@ -108,23 +122,47 @@ def initializeBoard():
 def playMusic(song):
     pass
 
+def modeSingleRandomLedRandomColorFade():
+    print("Running Mode modeSingleRandomLedRandomColorFade ...")
+    currentColor = randomColor(color_dict)
+    currentLED = randomLED()
+    fadeIn(currentLED,currentColor)
+    fadeOut(currentLED)
+
+def modeAllLEDRandomColorFade():
+    print("Running Mode modeAllLEDRandomColorFade ...")
+    currentColor = randomColor(color_dict)
+    fadeInAll(currentColor)
+    time.sleep(holdTimeSeconds)
+    fadeOutAll()
+
+def modeHalfLEDRandomColors():
+    print("Running mode modeHalfLEDRandomColors ...")
+    colors = randomColor(color_dict),randomColor(color_dict)
+    halfLED(colors)
+    time.sleep(holdTimeSeconds)
+
+def modeChaseLEDHold():
+    print("Running Mode modeChaseLEDHold ...")
+    currentColor = randomColor(color_dict)
+    chaseLEDHold(currentColor)
+
+
+# More of a test than a real initialization
 initializeBoard()
 
-while True:
-    # Get a random color defined in the dict.
-    currentColor = randomColor(color_dict)
-    
-    # print(f"currentColor: {currentColor}")
-    # print(f"brightness: {cp.pixels.brightness}")
+ALLOWED_MODES = [modeSingleRandomLedRandomColorFade, modeAllLEDRandomColorFade, modeHalfLEDRandomColors,modeChaseLEDHold]
+mode = load_mode_from_file("mode.txt")
 
-    # If the switch is to the left, do a random LED.
-    if cp.switch:
-        currentLED = randomLED()
-        fadeIn(currentLED,currentColor)
-        time.sleep(holdTimeSeconds)
-        fadeOut(currentLED)
-    # If the switch is to the right, do ALL LEDs.
-    else:
-        fadeInAll(currentColor)
-        time.sleep(holdTimeSeconds)
-        fadeOutAll()
+while True:
+    if cp.button_a or cp.button_b:
+        # On button press => Load and increment mode
+        mode += 1
+        mode %= len(ALLOWED_MODES)   # Ensure that mode loops over
+        save_mode_to_file("mode.txt",mode)
+        # Workaround to reset all pixels on a switch change.
+        cp.pixels.fill((0,0,0))
+        cp.pixels.brightness = 1.0
+        time.sleep(0.5)  # To avoid continuous mode switching, add a delay. Adjust as needed.
+
+    ALLOWED_MODES[mode]()    # Run the function corresponding to the mode
